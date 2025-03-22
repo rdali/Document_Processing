@@ -92,6 +92,91 @@ resource "aws_cognito_user_group" "default" {
 }
 
 
+resource "aws_iam_role" "a2i_flow" {
+  name               = "${var.project_name}-a2i-role"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": ["sagemaker.amazonaws.com"]
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+  lifecycle {
+    prevent_destroy = false
+  }
+}
+
+# Create IAM policy for A2I
+resource "aws_iam_policy" "this" {
+  name = "${var.project_name}-a2i-policy"
+  path = "/"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket",
+          "sagemaker:*",
+          "cognito-idp:*"
+        ]
+        Resource = [
+          "arn:aws:s3:::${var.processed_bucket}",
+          "arn:aws:s3:::${var.processed_bucket}/*",
+          "arn:aws:s3:::${var.raw_bucket}",
+          "arn:aws:s3:::${var.raw_bucket}/*",
+          aws_cognito_user_pool.workforce.arn,
+          "${aws_cognito_user_pool.workforce.arn}/*"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "this" {
+  role       = aws_iam_role.a2i_flow.name
+  policy_arn = aws_iam_policy.this.arn
+}
+
+resource "aws_iam_role_policy_attachment" "sagemaker" {
+  role       = aws_iam_role.a2i_flow.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSageMakerFullAccess"
+}
+
+# Create IAM policy for A2I flow
+resource "aws_iam_role_policy" "a2i_flow_policy" {
+  name = "${var.project_name}-a2i-flow"
+  role = aws_iam_role.a2i_flow.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          "arn:aws:s3:::${var.processed_bucket}",
+          "arn:aws:s3:::${var.processed_bucket}/*"
+        ]
+      }
+    ]
+  })
+}
 
 
 resource "aws_sagemaker_workforce" "this" {
@@ -150,46 +235,4 @@ resource "aws_sagemaker_flow_definition" "private" {
   }
   
   depends_on = [ time_sleep.wait1 ]
-}
-
-# Create IAM role for A2I flow
-resource "aws_iam_role" "a2i_flow" {
-  name = "${var.project_name}-a2i-flow"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "sagemaker.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
-}
-
-# Create IAM policy for A2I flow
-resource "aws_iam_role_policy" "a2i_flow" {
-  name = "${var.project_name}-a2i-flow"
-  role = aws_iam_role.a2i_flow.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:PutObject",
-          "s3:GetObject",
-          "s3:ListBucket"
-        ]
-        Resource = [
-          "arn:aws:s3:::${var.processed_bucket}",
-          "arn:aws:s3:::${var.processed_bucket}/*"
-        ]
-      }
-    ]
-  })
 }

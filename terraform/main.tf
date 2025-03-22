@@ -35,6 +35,7 @@ module "a2i" {
   source       = "./modules/a2i"
   project_name = var.project_name
   processed_bucket = module.storage.processed_bucket_name
+  raw_bucket = module.storage.raw_bucket_name
 }
 
 # IAM policy for Terraform state access (if needed)
