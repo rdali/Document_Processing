@@ -1,0 +1,439 @@
+<script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+
+<!--
+  Based on : https://github.com/aws-samples/amazon-textract-transformer-pipeline/blob/0ac365f8e174d44337a5881a7dca6d61b94016cd/notebooks/review/fields-validation-legacy.liquid.html
+  While many modern browsers support native PDF rendering (see https://pdfobject.com/static/), the iframe within which
+  SMGT/A2I task UIs run is sandboxed; and different browsers take different decisions on whether their built-in PDF
+  rendering plugins should be allowed in these contexts.
+
+  So for broader browser support, we'll use directly use the Mozilla PDF.js libraries which many of these browser
+  implementations are built on anyway:
+-->
+<script
+  src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.9.359/legacy/build/pdf.js"
+  integrity="sha384-babPVq8wdMqz15eJWx0SdLYNQULhZRUwMuwJTDT3QxPYRRNYKCHdNwFtN/g6lPmT"
+  crossorigin="anonymous"
+></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.9.359/legacy/web/pdf_viewer.css"
+  integrity="sha384-R3jyFcufUMnWbY95W/UYeS05QW9YBGL9rrkmu7gCilPJ28SRdZlHf43CUgNwIE8e"
+  crossorigin="anonymous">
+<script
+  src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.9.359/legacy/web/pdf_viewer.js"
+  integrity="sha384-jUMffufVvJRxRD31LIPe2aKzeoPEWxs0CGd3HL7WvoxMiiFulEziq+33ua7bwlza"
+  crossorigin="anonymous"
+></script>
+<script>
+    // PDF viewer setup script
+
+    // legacy/build/pdf.js exports the core `pdfjsLib`, and legacy/web/pdf_viewer.js exports the
+    // `pdfjsViewer` namespace.
+    try {
+      var pdfEventBus = new pdfjsViewer.EventBus();
+      var viewer = new pdfjsViewer.PDFViewer({
+        container: document.getElementById("pdf-container"),
+        viewer: document.getElementById("pdf-viewer"),
+        eventBus: pdfEventBus,
+      });
+
+      var loadingTask = pdfjsLib.getDocument(
+        // For some reason the URL from Liquid template gets params escaped from '&' to '&amp;':
+        "{{ task.input.image1 | grant_read_access }}".replaceAll("&amp;", "&")
+      );
+      loadingTask.promise.then((doc) => {
+        console.log("Loaded document with " + doc.numPages + " page(s)");
+        viewer.setDocument(doc);
+        document.getElementById("pdf-load-error").hidden = true;
+      }, (reason) => {
+        console.error("Document load failed", reason);
+        document.getElementById("pdf-load-error").hidden = false;
+      });
+    } catch (err) {
+      console.error("Failed to initialize PDF viewer", err);
+      document.getElementById("pdf-load-error").hidden = false;
+    }
+
+    function drawRectangle(boundingBox, page) {
+      const overlayCanvas = document.createElement('canvas', { id: 'overlay-canvas' });
+      const originalCanvas = viewer._pages[page].canvas; // The original canvas you're overlaying
+      const pdfContainer = viewer._pages[page].div
+
+
+      overlayCanvas.width = originalCanvas.width;
+      overlayCanvas.height = originalCanvas.height;
+      overlayCanvas.style.position = 'absolute';
+      overlayCanvas.style.width = originalCanvas.style.width
+      overlayCanvas.style.height = originalCanvas.style.height
+      overlayCanvas.style.left = originalCanvas.offsetLeft + 'px';
+      overlayCanvas.style.top = originalCanvas.offsetTop + 'px';
+      pdfContainer.appendChild(overlayCanvas);
+      viewer._pages[page].fake_canvas = overlayCanvas
+
+      const ctx = overlayCanvas.getContext('2d');
+
+      const scaleX = overlayCanvas.width
+      const scaleY = overlayCanvas.height;
+
+      const x = boundingBox.Left * scaleX;
+      const y = boundingBox.Top * scaleY;
+      const width = boundingBox.Width * scaleX;
+      const height = boundingBox.Height * scaleY;
+
+      ctx.save()
+      ctx.beginPath();
+      ctx.rect(x, y, width, height);
+      ctx.globalCompositeOperation = 'hard-light'
+      ctx.fillStyle = 'rgba(20,20,20,0.2)' // The closer to black the better
+      ctx.fillRect(x, y, width, height);
+
+      ctx.strokeStyle = 'red';
+      ctx.stroke();
+    }
+
+    function insertDataIntoTable(data) {
+      data.forEach(_page => {
+        const page = _page.page - 1
+        const headers = _page.headers
+        const lines = _page.lines
+        headers.forEach(rowData => {
+          const row = document.getElementById('head-' + _page.page + "-" + rowData.hdrrow);
+          const firstCell = row.querySelector('td'); // Get the first 'td' element
+
+          firstCell.style.background = rowData.validation_required ? 'rgb(255, 23, 68, .3)' : 'rgb(111, 191, 115, .3)';
+
+          row.addEventListener('mouseenter', () => drawRectangle(rowData.bounding_box, page));
+          row.addEventListener('mouseleave', () => {
+
+            const overlayCanvas = viewer._pages[page].fake_canvas
+            const ctx = overlayCanvas.getContext('2d');
+            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+            // Optionally hide the overlay
+            overlayCanvas.style.display = 'none';
+            overlayCanvas.remove()
+          });
+        });
+
+        lines.forEach(rowData => {
+          const row = document.getElementById('line-' + _page.page + "-" + rowData.row);
+
+          const firstCell = row.querySelector('td'); // Get the first 'td' element
+          const cells = row.querySelectorAll('td')
+          const editRowData = {
+            "Item": rowData['ITEM'],
+            "Quantity": rowData['QUANTITY'],
+            "Unit Price": rowData['UNIT_PRICE'],
+            "Price": rowData['PRICE'],
+            "Product Code": rowData['PRODUCT_CODE']
+          }
+          Object.values(editRowData).forEach((column, idx) => {
+            if (column == null) return;
+
+            const cell = cells[idx + 1]
+            cell.style.background = column.validation_required ? 'rgb(255, 23, 68, .3)' : 'rgb(111, 191, 115, .3)';
+
+            cell.addEventListener('mouseenter', () => drawRectangle(column.bounding_box, page));
+            cell.addEventListener('mouseleave', () => {
+              const overlayCanvas = viewer._pages[page].fake_canvas
+              const ctx = overlayCanvas.getContext('2d');
+              ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+              // Optionally hide the overlay
+              overlayCanvas.style.display = 'none';
+              overlayCanvas.remove()
+            });
+          })
+
+        })
+
+      })
+    }
+
+    insertDataIntoTable({{ task.input.pages | skip_autoescape }});
+
+    function viewerZoomIn() {
+      viewer.currentScale *= 1.1;
+    }
+
+    function viewerZoomOut() {
+      viewer.currentScale /= 1.1;
+    }
+</script>
+
+<style>
+  table, tr, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+    padding: 10px 0;
+  }
+  th {
+    font-size: 14px;
+    text-transform: capitalize;
+    background-color: #009879;
+    color: #ffffff;
+    text-align: center;
+  }
+  td {
+    font-size: 13px;
+    text-align: center;
+  }
+  input[type=text] {
+    margin: 0 auto;
+    width: 90%;
+  }
+  .correctFields {
+    display: flex;
+    flex-direction: column;
+    border-color: transparent;
+    text-align: left;
+  }
+  #pdf-container {
+    max-width: 40%;
+    max-height: 63%;
+  }
+textarea::placeholder {
+  color: #0bf;
+}
+h3 {
+  margin: 5px 0;
+}
+table {
+    border-collapse: collapse;
+    margin: 25px 0;
+    font-size: 0.9em;
+    font-family: sans-serif;
+    min-width: 400px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+}
+table tbody tr {
+    border-bottom: 1px solid #dddddd;
+}
+
+table tbody tr:nth-of-type(even) {
+    background-color: #f3f3f3;
+}
+
+table tbody tr:last-of-type {
+    border-bottom: 2px solid #009879;
+}
+
+.line {
+  border-collapse: collapse; /* Make borders merge neatly */
+  width: 100%; /* Adjust width as needed */
+  font-family: Arial, sans-serif; /* Choose a font that fits your design */
+}
+
+.line th {
+  padding: 10px;             /* Cell padding */
+  text-align: left;          /* Align header text */
+}
+
+.line td {
+  padding: 8px;              /* Cell padding */
+}
+
+.line tr:nth-child(even) {
+}
+
+.correctFields { 
+  text-align: center;        /* Center radio button groups */ 
+}
+
+/* Customize textarea, if desired */
+.line textarea { 
+   width: 90%; /* Or any suitable width */
+}
+
+.heading {
+  border-collapse: collapse; /* Make borders merge neatly */
+  width: 100%; /* Adjust width as needed */
+  /* font-family: Arial, sans-serif; Choose a font that fits your design */
+
+}
+
+.heading th {
+  /* background-color: #f0f0f0; Light header background */
+  padding: 10px;             /* Cell padding */
+  text-align: left;          /* Align header text */
+  /* color:black */
+}
+
+.heading td {
+  /* border: 1px solid #ddd;    Subtle cell borders */
+  padding: 8px;              /* Cell padding */
+}
+
+.heading tr:nth-child(even) {
+  /* background-color: #fafafa; Light striping */
+}
+
+.correctFields { 
+  text-align: center;        /* Center radio button groups */ 
+}
+
+/* Customize textarea, if desired */
+.heading textarea { 
+   width: 90%; /* Or any suitable width */
+}
+
+
+</style>
+<crowd-form>
+  <div style="display: flex; justify-content: space-around; max-height: 90vh; overflow: hidden;">
+    <div style="width: 40%;">
+      <h1>Instructions</h1>
+      <p>Please review the header and line items, and make corrections where appropriate. </p>
+      <p> You can modify both the header and line items </p>
+      <h3>Original Form</h3>
+      <classification-target>
+        <!-- <img style="width: 100%; max-height: 40%; margin-bottom: 10px" src="{{ task.input.image1 | grant_read_access }}"/>    -->
+
+        <!-- <embed src="" style="width: 100%; height: 90%; margin-bottom: 10px" />  -->
+
+        <!-- <iframe style="width: 100%; height: 600px;" src="{{ task.input.image1 | grant_read_access }}" type="application/pdf"></iframe> -->
+          
+          <div
+            id="pdf-container"
+            class="pdfContainer"
+            style="height: 100%; width: 100%; position: absolute; overflow: auto;"
+          >
+            <div
+              class="pdf-floating-toolbar"
+              style="position: sticky; left: 0px; top: 0px; width: 100%; z-index: 10;"
+            >
+              <crowd-button
+                class="pdf-zoom-button"
+                onclick="viewerZoomOut();"
+              ><iron-icon icon="zoom-out" alt="Zoom Out"/></crowd-button>
+              <crowd-button
+                class="pdf-zoom-button"
+                onclick="viewerZoomIn();"
+              ><iron-icon icon="zoom-in" alt="Zoom In"/></crowd-button>
+            </div>
+            <div id="pdf-viewer" class="pdfViewer"></div>
+            <div id="pdf-load-error" hidden="true">
+              <iron-icon icon="error-outline" style="height: 40px; width: 40px;"></iron-icon>
+              <p style="margin-top: 5px;">
+                Sorry, failed to load the PDF document for this task! Please try refreshing the page and contact the
+                task administrator if the error persists.
+              </p>
+            </div>
+          </div>
+
+      </classification-target>    
+    </div>
+
+    <div style="width: 58%; max-height: 90vh; overflow-y: scroll;">
+      <h1> Enter your corrections below </h1>
+
+      {% for page in task.input.pages %}
+        {% assign currentPage = page.page %}
+        {% assign currentHeaders = page.headers %}
+        {% assign currentItems = page.lines %}
+
+      <h2>Page {{ currentPage }}</h2>
+
+      <table class="heading" id="heading-{{ currentPage }}">
+      <tr>
+        <th>header line</th>
+        <th>original form header</th>
+        <th>Edited?</th>
+        <th>comments</th>
+      </tr>
+
+      <h3>Header Data</h3>
+
+      {% for pair in currentHeaders %}
+
+      <tr id="head-{{currentPage}}-{{ pair.hdrrow }}">
+        <td>{{ pair.hdrrow }}</td>
+        <td><crowd-text-area name="editedhdr-page{{ currentPage }}-index{{ forloop.index }}" value="{{ pair.orighdr }}"></crowd-text-area></td>     
+        <td class="correctFields">
+          <div>
+            <input type="radio" id="agree{{ forloop.index }}" name="radio-editedhdr-page{{ currentPage }}-index{{ forloop.index }}" value="Yes" required>
+            <label for="agree{{ forloop.index }}">Yes</label>
+          </div>
+          <div>
+            <input type="radio" id="disagree{{ forloop.index }}" name="radio-editedhdr-page{{ currentPage }}-index{{ forloop.index }}" value="No" checked="checked">
+            <label for="disagree{{ forloop.index }}">No</label>
+          </div>
+        </td>
+         <td>
+          <crowd-text-area name="Comments-page{{ currentPage }}-index{{ forloop.index }}" value=""></crowd-text-area>
+         </td>
+      </tr>
+        {% endfor %}
+      </table>
+      <h3>Line Item Data</h3>
+    <table class="line" id="line-{{currentPage}}">
+      <tr>
+          <th>line item</th>
+          <th>item</th>
+          <th>quantity</th>
+          <th>unit_price</th>
+          <th>price</th>
+          <th>product_code</th>
+          <th>Edited?</th>
+        </tr>
+        {% for pair in currentItems %}
+          {% assign ITEM = pair.ITEM %}
+          {% assign QUANTITY = pair.QUANTITY %}
+          {% assign UNIT_PRICE = pair.UNIT_PRICE %}
+          {% assign PRICE = pair.PRICE %}
+          {% assign PRODUCT_CODE = pair.PRODUCT_CODE %}
+
+        <tr id="line-{{currentPage}}-{{ pair.row }}">
+          <td>{{ pair.row }}</td>
+          {% if ITEM != null %}
+          <td><crowd-text-area name="editeditem-page{{ currentPage }}-index{{ forloop.index }}" value="{{ ITEM.origval }}"></crowd-text-area></td>
+          {% else %}
+          <td><crowd-text-area name="editeditem-page{{ currentPage }}-index{{ forloop.index }}" value=""></crowd-text-area></td>
+          {% endif %}
+
+          {% if QUANTITY != null %}
+          <td><crowd-text-area name="editedquantity-page{{ currentPage }}-index{{ forloop.index }}" value="{{ QUANTITY.origval }}"></crowd-text-area></td>
+          {% else %}
+          <td><crowd-text-area name="editedquantity-page{{ currentPage }}-index{{ forloop.index }}" value=""></crowd-text-area></td>
+          {% endif %}
+
+          {% if UNIT_PRICE != null %}
+          <td><crowd-text-area name="editedunitprice-page{{ currentPage }}-index{{ forloop.index }}" value="{{ UNIT_PRICE.origval }}"></crowd-text-area></td>
+          {% else %}
+          <td><crowd-text-area name="editedunitprice-page{{ currentPage }}-index{{ forloop.index }}" value=""></crowd-text-area></td>
+          {% endif %}
+
+          {% if PRICE != null %}
+          <td><crowd-text-area name="editedprice-page{{ currentPage }}-index{{ forloop.index }}" value="{{ PRICE.origval }}"></crowd-text-area></td>
+          {% else %}
+          <td><crowd-text-area name="editedprice-page{{ currentPage }}-index{{ forloop.index }}" value=""></crowd-text-area></td>
+          {% endif %}
+
+
+          {% if PRODUCT_CODE != null %}
+          <td><crowd-text-area name="editedproductcode-page{{ currentPage }}-index{{ forloop.index }}" value="{{ PRODUCT_CODE.origval }}"></crowd-text-area></td>
+          <td class="correctFields">
+          {% else %}
+          <td><crowd-text-area name="editedproductcode-page{{ currentPage }}-index{{ forloop.index }}" value=""></crowd-text-area></td>
+          <td class="correctFields">
+          {% endif %}
+
+            <div>
+            <input type="radio" id="agree{{ forloop.index }}" name="radio-editeditem-page{{ currentPage }}-index{{ forloop.index }}" value="Yes" required>
+            <label for="agree{{ forloop.index }}">Yes</label>              
+            </div>
+            <div>
+            <input type="radio" id="disagree{{ forloop.index }}" name="radio-editeditem-page{{ currentPage }}-index{{ forloop.index }}" value="No" checked="checked">
+            <label for="disagree{{ forloop.index }}">No</label>
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+    {% endfor %}
+    </div> 
+  </div>
+
+
+  </div>
+
+</crowd-form>
+
