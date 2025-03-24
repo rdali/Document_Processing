@@ -6,13 +6,13 @@ terraform {
     }
   }
 
-  backend "s3" {
-    bucket         = "terraform-state-bucket-rdali"
-    key            = "document-processor/terraform.tfstate"
-    region         = "us-east-1"
-    encrypt        = true
-    dynamodb_table = "terraform-state-table-rdali"
-  }
+#  backend "s3" {
+#    bucket         = "terraform-state-bucket-rdali"
+#    key            = "document-processor/terraform.tfstate"
+#    region         = "us-east-1"
+#    encrypt        = true
+#    dynamodb_table = "terraform-state-table-rdali"
+#  }
 }
 
 provider "aws" {
