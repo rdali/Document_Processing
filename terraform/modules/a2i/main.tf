@@ -236,3 +236,26 @@ resource "aws_sagemaker_flow_definition" "private" {
   
   depends_on = [ time_sleep.wait1 ]
 }
+
+resource "aws_cognito_user" "this" {
+    for_each = var.aws_cognito_users
+
+    user_pool_id = aws_cognito_user_pool.workforce.id
+    username     = each.value
+
+    attributes = {
+        email          = each.value
+        email_verified = true
+    }
+}
+
+
+resource "aws_cognito_user_in_group" "this" {
+  for_each = aws_cognito_user.this
+
+  user_pool_id = aws_cognito_user_pool.workforce.id
+  group_name   = aws_cognito_user_group.default.name
+  username     = each.value.username
+}
+
+

@@ -26,4 +26,10 @@ variable "state_table_name" {
   description = "Name of the DynamoDB table for Terraform state locking"
   type        = string
   default     = "terraform-state-table-rdali"
+}
+
+variable "aws_cognito_users" {
+  description = "List of Cognito users to create"
+  type        = map(string)
+  default     = {}
 } 

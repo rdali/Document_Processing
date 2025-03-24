@@ -36,6 +36,7 @@ module "a2i" {
   project_name = var.project_name
   processed_bucket = module.storage.processed_bucket_name
   raw_bucket = module.storage.raw_bucket_name
+  aws_cognito_users = var.aws_cognito_users
 }
 
 # IAM policy for Terraform state access (if needed)
