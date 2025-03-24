@@ -4,7 +4,7 @@ A serverless document processing pipeline using AWS Textract and Amazon Augmente
 
 ## Architecture
 
-![Architecture Diagram](./IDP_HLD.png)
+![Architecture Diagram](./docs/IDP_HLD.png)
 
 - S3 buckets for raw and processed documents
 - Lambda functions for processing
@@ -24,7 +24,7 @@ A serverless document processing pipeline using AWS Textract and Amazon Augmente
 6. Run `terraform plan` to see the changes that will be applied
 7. Run `terraform apply` to create the infrastructure
 8. Test the system: 
-   - Upload a document to the `{project-name}-raw-documents` S3 bucket
+   - Upload an invoice document (extension .pdf) to the `{project-name}-raw-documents` S3 bucket. A test invoice can be found in the `docs` folder.
    - Check the `{project-name}-processed-documents` S3 bucket for the results
    - Go to AWS SageMaker AI > Ground Truth > Private Workforces > `{project-name}-private-workforce` and find the Worker label portal sign in URL
    - Use the sign in URL to sign in to the Worker label portal. The credentials will be sent in an email to the cognito users you added in the terraform.tfvars file
