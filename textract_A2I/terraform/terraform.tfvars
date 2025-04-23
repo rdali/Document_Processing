@@ -1,4 +1,4 @@
-project_name = "document-processor"
+project_name = "document-processor-ml"
 
 aws_region = "us-east-1"
 

@@ -31,6 +31,6 @@ A serverless document processing pipeline using AWS Textract and Amazon Augmente
    - Once signed in, you will be able to see the documents that need validation
    - Validate the documents and click on the `Submit` button
    - Check the `{project-name}-processed-documents` S3 bucket for the results
-8. Run `terraform destroy` to destroy the infrastructure when you're done
+9. Run `terraform destroy` to destroy the infrastructure when you're done
 
 
