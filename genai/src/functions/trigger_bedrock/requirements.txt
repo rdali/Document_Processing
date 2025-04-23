@@ -1,4 +1,1 @@
 boto3==1.26.137
-PyPDF2==3.0.1
-Pillow==10.0.0
-pytesseract==0.3.10 
