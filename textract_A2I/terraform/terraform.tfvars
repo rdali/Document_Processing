@@ -1,7 +1,7 @@
-project_name = "document-processor-ml-123"
+project_name = "document-processor-ml"
 
 aws_region = "us-east-1"
 
 aws_cognito_users = {
-  "name.surname" = "rola.dali@rapidscale.com"
+  "name.surname" = "email@email.com"
 }
