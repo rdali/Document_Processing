@@ -5,7 +5,7 @@ resource "aws_lambda_function" "lambda_trigger_bda" {
   function_name    = "${var.project_name}-trigger-bda-lambda-${var.env}"
   role            = var.lambda_role_bda_arn
   handler         = "main.handler"
-  runtime         = "python3.9"
+  runtime         = "python3.12"
   timeout         = 300
   memory_size     = 256
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
@@ -60,7 +60,7 @@ module "lambda_boto3_layer" {
 
   layer_name               = "${var.project_name}-boto3-layer-${var.env}"
   description              = "boto3 updated lambda layer (deployed from local)"
-  compatible_runtimes      = ["python3.9"]
+  compatible_runtimes      = ["python3.12"]
   compatible_architectures = ["x86_64"]
 
   source_path = [

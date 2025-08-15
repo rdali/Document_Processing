@@ -18,14 +18,28 @@ The Textract stack and code is found in the `textract_A2I` folder.
 Do not forget to `terraform destroy` to delete the stack once you are done with it.
 
 
-### Bedrock Stack:
+### Bedrock Data Automation Stack:
 
-The Bedrco stack and code is found in the `genai` folder.  
-`cd genai ` and follow the README in that folder to deploy the system.  
+The Bedrock Data Automation stack and code is found in the `bda` folder.  
+`cd bda ` and follow the README in that folder to deploy the system.  
 Do not forget to `terraform destroy` to delete the stack once you are done with it.
+
+### Bedrock LLM Text Stack:
+
+The Bedrock LLM Text stack and code is found in the `genai_txt` folder.  
+`cd genai_txt` and follow the README in that folder to deploy the system.  
+Do not forget to `terraform destroy` to delete the stack once you are done with it.
+
+
+### Bedrock LLM image Stack:
+
+The Bedrock LLM image stack and code is found in the `genai_img` folder.  
+`cd genai_img` and follow the README in that folder to deploy the system.  
+Do not forget to `terraform destroy` to delete the stack once you are done with it.
+
 
 
 ## Differences:
 
-Run both solutions and note differences in output and cost.
+Run all solutions and note differences in output and cost.
 

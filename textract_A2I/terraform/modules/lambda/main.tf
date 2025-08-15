@@ -4,7 +4,7 @@ resource "aws_lambda_function" "trigger_textract" {
   function_name    = "${var.project_name}-trigger-textract-lambda"
   role            = aws_iam_role.textract_trigger.arn
   handler         = "main.handler"
-  runtime         = "python3.9"
+  runtime         = "python3.12"
   timeout         = 300
   memory_size     = 256
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
@@ -49,7 +49,7 @@ resource "aws_lambda_function" "textract_process" {
   function_name    = "${var.project_name}-textract-process-lambda"
   role            = aws_iam_role.textract_process.arn
   handler         = "main.handler"
-  runtime         = "python3.9"
+  runtime         = "python3.12"
   timeout         = 300
   memory_size     = 256
   source_code_hash = data.archive_file.textract_processor_zip.output_base64sha256

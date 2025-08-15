@@ -4,7 +4,7 @@ resource "aws_lambda_function" "bedrock_trigger" {
   function_name    = "${var.project_name}-trigger-bedrock-lambda"
   role            = aws_iam_role.bedrock_trigger.arn
   handler         = "main.handler"
-  runtime         = "python3.9"
+  runtime         = "python3.12"
   timeout         = 300
   memory_size     = 256
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256

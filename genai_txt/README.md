@@ -4,12 +4,12 @@ A serverless document processing pipeline using CLaude through AWS Bedrock.
 
 ## Architecture
 
-![Architecture Diagram](./docs/IDP_HLD_ai.png)
+![Architecture Diagram](./docs/LLM_txt_HLD.png)
 
 - S3 buckets for raw and processed documents
 - Lambda functions for processing
 - SQS for message handling
-- AWS Bedrock for the call to Claude LLM
+- AWS Bedrock for the call to Claude LLM (Need to enable model access)
 
 
 

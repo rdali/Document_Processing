@@ -6,4 +6,6 @@
 *.terraform/
 *terraform.tfstate
 *terraform.tfstate.backup
+*.ipynb_checkpoints
 bda/terraform/builds/*
+genai_txt/terraform/builds/*
