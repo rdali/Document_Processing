@@ -1,6 +1,9 @@
 *.DS_Store
-build/
+*build/
+*builds/*
+*/terraform/build/*
 *.terraform.lock.hcl
-.terraform/
-terraform.tfstate
-terraform.tfstate.backup
+*.terraform/
+*terraform.tfstate
+*terraform.tfstate.backup
+bda/terraform/builds/*

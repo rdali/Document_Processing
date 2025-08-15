@@ -1,6 +1,6 @@
-# Document Processor
+# Document Processor wiht Bedrock Data Automation
 
-A serverless document processing pipeline using CLaude through AWS Bedrock.
+A serverless document processing pipeline using AWS Bedrock Data Automation (DBA).
 
 ## Architecture
 
@@ -9,7 +9,7 @@ A serverless document processing pipeline using CLaude through AWS Bedrock.
 - S3 buckets for raw and processed documents
 - Lambda functions for processing
 - SQS for message handling
-- AWS Bedrock for the call to Claude LLM
+- AWS Bedrock Data Automation
 
 
 
