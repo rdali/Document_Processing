@@ -35,7 +35,8 @@ module "bedrock" {
   source       = "./modules/bedrock"
   project_name = var.project_name
   env = var.env
-  bda_project_description = var.bda_project_description 
+  bda_project_description = var.bda_project_description
+  bda_standard_output_configuration = var.bda_standard_output_configuration
   blueprint_schema = file(var.blueprint_schema_file)
   blueprint_type = var.blueprint_type
 }

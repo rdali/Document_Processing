@@ -20,6 +20,8 @@ resource "awscc_bedrock_data_automation_project" "bda_project" {
             }
         ]
     }
+    standard_output_configuration = var.bda_standard_output_configuration
+
 }
 
 

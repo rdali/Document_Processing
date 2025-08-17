@@ -18,3 +18,27 @@ bda_project_description = "Document Processor Test Project"
 blueprint_schema_file = "../src/blueprints/invoice_blueprint_schema.json"
 
 blueprint_type = "DOCUMENT"
+
+bda_standard_output_configuration = {
+    document = {
+      extraction = {
+        bounding_box = {
+          state = "ENABLED"
+        }
+        granularity = {
+          types = ["WORD", "PAGE"]
+        }
+      }
+      generative_field = {
+        state = "ENABLED"
+      }
+      output_format = {
+        additional_file_format = {
+          state = "ENABLED"
+        }
+        text_format = {
+          types = ["PLAIN_TEXT"]
+        }
+      }
+    }
+}
